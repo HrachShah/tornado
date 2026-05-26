@@ -60,7 +60,7 @@ class DummyExecutor(futures.Executor):
         future: futures.Future[_T] = futures.Future()
         try:
             future_set_result_unless_cancelled(future, fn(*args, **kwargs))
-        except Exception:
+        except Exception as e:
             future_set_exc_info(future, sys.exc_info())
         return future
 
