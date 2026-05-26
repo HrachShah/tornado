@@ -187,7 +187,7 @@ def _reload_on_update(modify_times: dict[str, float]) -> None:
 def _check_file(modify_times: dict[str, float], path: str) -> None:
     try:
         modified = os.stat(path).st_mtime
-    except Exception:
+    except OSError:
         return
     if path not in modify_times:
         modify_times[path] = modified
@@ -312,7 +312,7 @@ def main() -> None:
     except SystemExit as e:
         exit_status = e.code
         gen_log.info("Script exited with status %s", e.code)
-    except Exception as e:
+    except (OSError, ImportError) as e:
         gen_log.warning("Script exited with uncaught exception", exc_info=True)
         # If an exception occurred at import time, the file with the error
         # never made it into sys.modules and so we won't know to watch it.
