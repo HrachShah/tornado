@@ -15,6 +15,7 @@
 
 """A non-blocking TCP connection factory."""
 
+import asyncio
 import datetime
 import functools
 import numbers
@@ -133,6 +134,9 @@ class _Connector:
         self.remaining -= 1
         try:
             stream = future.result()
+        except asyncio.CancelledError as e:
+            # propagate cancellation rather than retrying
+            raise
         except Exception as e:
             if self.future.done():
                 return
