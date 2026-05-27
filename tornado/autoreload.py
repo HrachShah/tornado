@@ -187,7 +187,7 @@ def _reload_on_update(modify_times: dict[str, float]) -> None:
 def _check_file(modify_times: dict[str, float], path: str) -> None:
     try:
         modified = os.stat(path).st_mtime
-    except Exception:
+    except OSError:
         return
     if path not in modify_times:
         modify_times[path] = modified
