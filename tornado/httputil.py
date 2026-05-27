@@ -1000,7 +1000,7 @@ def parse_body_arguments(
         try:
             # real charset decoding will happen in RequestHandler.decode_argument()
             uri_arguments = parse_qs_bytes(body, keep_blank_values=True)
-        except Exception as e:
+        except ValueError as e:
             raise HTTPInputError("Invalid x-www-form-urlencoded body: %s" % e) from e
         for name, values in uri_arguments.items():
             if values:
@@ -1024,7 +1024,7 @@ def parse_body_arguments(
                     break
             else:
                 raise HTTPInputError("multipart boundary not found")
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             raise HTTPInputError("Invalid multipart/form-data: %s" % e) from e
 
 
