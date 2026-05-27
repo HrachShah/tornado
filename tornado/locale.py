@@ -209,7 +209,7 @@ def load_gettext_translations(directory: str, domain: str) -> None:
             _translations[lang] = gettext.translation(
                 domain, directory, languages=[lang]
             )
-        except Exception as e:
+        except OSError as e:
             gen_log.error("Cannot load translation for '%s': %s", lang, str(e))
             continue
     _supported_locales = frozenset(list(_translations.keys()) + [_default_locale])

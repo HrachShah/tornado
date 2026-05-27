@@ -326,7 +326,7 @@ class Template:
                 "exec",
                 dont_inherit=True,
             )
-        except Exception:
+        except SyntaxError:
             formatted_code = _format_code(self.code).rstrip()
             app_log.error("%s code:\n%s", self.name, formatted_code)
             raise
