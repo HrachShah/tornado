@@ -312,7 +312,7 @@ def main() -> None:
     except SystemExit as e:
         exit_status = e.code
         gen_log.info("Script exited with status %s", e.code)
-    except Exception as e:
+    except (OSError, SyntaxError) as e:
         gen_log.warning("Script exited with uncaught exception", exc_info=True)
         # If an exception occurred at import time, the file with the error
         # never made it into sys.modules and so we won't know to watch it.
