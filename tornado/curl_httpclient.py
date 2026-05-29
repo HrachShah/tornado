@@ -212,7 +212,7 @@ class CurlAsyncHTTPClient(AsyncHTTPClient):
                         curl.info["buffer"],  # type: ignore
                         curl.info["headers"],  # type: ignore
                     )
-                except Exception as e:
+                except (ValueError, OSError) as e:
                     # If there was an error in setup, pass it on
                     # to the callback. Note that allowing the
                     # error to escape here will appear to work
