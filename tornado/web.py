@@ -3709,7 +3709,7 @@ def _decode_signed_value_v1(
         return None
     try:
         return base64.b64decode(parts[0])
-    except Exception:
+    except (ValueError, TypeError):
         return None
 
 
