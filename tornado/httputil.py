@@ -552,13 +552,13 @@ class HTTPServerRequest:
             if "Cookie" in self.headers:
                 try:
                     parsed = parse_cookie(self.headers["Cookie"])
-                except Exception:
+                except (ValueError, AttributeError):
                     pass
                 else:
                     for k, v in parsed.items():
                         try:
                             self._cookies[k] = v
-                        except Exception:
+                        except (ValueError, AttributeError):
                             # SimpleCookie imposes some restrictions on keys;
                             # parse_cookie does not. Discard any cookies
                             # with disallowed keys.
