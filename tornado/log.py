@@ -187,7 +187,7 @@ class LogFormatter(logging.Formatter):
             # result are so useless (and tornado is fond of using utf8-encoded
             # byte strings wherever possible).
             record.message = _safe_unicode(message)
-        except Exception as e:
+        except UnicodeDecodeError as e:
             record.message = f"Bad message ({e!r}): {record.__dict__!r}"
 
         record.asctime = self.formatTime(record, cast(str, self.datefmt))
