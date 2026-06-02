@@ -2905,7 +2905,7 @@ class StaticFileHandler(RequestHandler):
         if ims_value is not None:
             try:
                 if_since = email.utils.parsedate_to_datetime(ims_value)
-            except Exception:
+            except ValueError:
                 return False
             if if_since.tzinfo is None:
                 if_since = if_since.replace(tzinfo=datetime.timezone.utc)
@@ -3769,7 +3769,7 @@ def _decode_signed_value_v2(
         return None
     try:
         return base64.b64decode(value_field)
-    except Exception:
+    except (ValueError, TypeError):
         return None
 
 
