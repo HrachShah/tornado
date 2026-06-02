@@ -205,6 +205,13 @@ def coroutine(
             result = ctx_run(func, *args, **kwargs)
         except (Return, StopIteration) as e:
             result = _value_from_stopiteration(e)
+        except (TypeError, ValueError):
+            future_set_exc_info(future, sys.exc_info())
+            try:
+                return future
+            finally:
+                # Avoid circular references
+                future = None  # type: ignore
         except Exception:
             future_set_exc_info(future, sys.exc_info())
             try:
