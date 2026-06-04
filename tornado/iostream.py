@@ -346,9 +346,11 @@ class BaseIOStream:
             gen_log.info("Unsatisfiable read, closing connection: %s" % e)
             self.close(exc_info=e)
             return future
-        except:
+        except Exception:
             # Ensure that the future doesn't log an error because its
-            # failure was never examined.
+            # failure was never examined. Catch Exception (rather than
+            # using a bare except) so that KeyboardInterrupt and
+            # SystemExit still propagate to the caller.
             future.add_done_callback(lambda f: f.exception())
             raise
         return future
@@ -383,7 +385,7 @@ class BaseIOStream:
             gen_log.info("Unsatisfiable read, closing connection: %s" % e)
             self.close(exc_info=e)
             return future
-        except:
+        except Exception:
             future.add_done_callback(lambda f: f.exception())
             raise
         return future
@@ -411,7 +413,14 @@ class BaseIOStream:
         self._read_partial = partial
         try:
             self._try_inline_read()
-        except:
+        except UnsatisfiableReadError:
+            # Re-raise the expected exception without touching the future.
+            raise
+        except Exception:
+            # Ensure that the future doesn't log an error because its
+            # failure was never examined. Catch Exception (rather than
+            # using a bare except) so that KeyboardInterrupt and
+            # SystemExit still propagate to the caller.
             future.add_done_callback(lambda f: f.exception())
             raise
         return future
@@ -456,7 +465,13 @@ class BaseIOStream:
 
         try:
             self._try_inline_read()
-        except:
+        except UnsatisfiableReadError:
+            raise
+        except Exception:
+            # Ensure that the future doesn't log an error because its
+            # failure was never examined. Catch Exception (rather than
+            # using a bare except) so that KeyboardInterrupt and
+            # SystemExit still propagate to the caller.
             future.add_done_callback(lambda f: f.exception())
             raise
         return future
@@ -486,7 +501,7 @@ class BaseIOStream:
         self._read_until_close = True
         try:
             self._try_inline_read()
-        except:
+        except Exception:
             future.add_done_callback(lambda f: f.exception())
             raise
         return future
