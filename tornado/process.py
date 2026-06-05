@@ -229,7 +229,16 @@ class Subprocess:
             self.stderr = PipeIOStream(err_r)
         try:
             self.proc = subprocess.Popen(*args, **kwargs)
-        except:
+        except (OSError, ValueError, TypeError, IndexError):
+            # subprocess.Popen() raises OSError (FileNotFoundError,
+            # PermissionError, ...) for fork/exec failures, ValueError or
+            # TypeError for invalid argument shapes/types, and IndexError if
+            # ``args`` is empty (it indexes ``args[0]`` to derive the
+            # ``executable``). Close every pipe fd we created (both ends of
+            # every pipe) before re-raising, otherwise the read and write
+            # ends leak until the parent process exits. Catch the specific
+            # documented failure types rather than a bare ``except`` so that
+            # KeyboardInterrupt and SystemExit still propagate to the caller.
             for fd in pipe_fds:
                 os.close(fd)
             raise
