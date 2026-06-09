@@ -640,22 +640,23 @@ class _Option:
     )
 
     def _parse_timedelta(self, value: str) -> datetime.timedelta:
-        try:
-            sum = datetime.timedelta()
-            start = 0
-            while start < len(value):
-                m = self._TIMEDELTA_PATTERN.match(value, start)
-                if not m:
-                    raise Exception()
-                num = float(m.group(1))
-                units = m.group(2) or "seconds"
-                units = self._TIMEDELTA_ABBREV_DICT.get(units, units)
-
+        sum = datetime.timedelta()
+        start = 0
+        while start < len(value):
+            m = self._TIMEDELTA_PATTERN.match(value, start)
+            if not m:
+                raise Error("Unrecognized timedelta format: %r" % value)
+            num = float(m.group(1))
+            units = m.group(2) or "seconds"
+            units = self._TIMEDELTA_ABBREV_DICT.get(units, units)
+            try:
                 sum += datetime.timedelta(**{units: num})
-                start = m.end()
-            return sum
-        except Exception:
-            raise
+            except (TypeError, OverflowError):
+                # TypeError: '{units}' is not a keyword argument (e.g. units='banana')
+                # OverflowError: 1e308s overflows the C int used to build timedelta
+                raise Error("Unrecognized timedelta format: %r" % value)
+            start = m.end()
+        return sum
 
     def _parse_bool(self, value: str) -> bool:
         return value.lower() not in ("false", "0", "f")
