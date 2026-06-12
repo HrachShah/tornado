@@ -56,7 +56,20 @@ if hasattr(gen.convert_yielded, "register"):
                 failure.raiseException()
                 # Should never happen, but just in case
                 raise Exception("errback called without error")
-            except:
+            except (ValueError, TypeError, RuntimeError):
+                # failure.raiseException() only re-raises the wrapped
+                # exception (ValueError for malformed Failure payloads,
+                # TypeError when the wrapped exception class is wrong,
+                # RuntimeError for the synthetic 'errback called without
+                # error' fallback above). The bare except: also caught
+                # KeyboardInterrupt and SystemExit, which should
+                # propagate to the caller rather than be turned into a
+                # Future exc_info payload, and silently swallowed any
+                # future bug introduced into raiseException or the
+                # fallback raise. The narrow tuple keeps the documented
+                # 'errback surfaces twisted failure' behavior for the
+                # three real failure modes while letting real bugs
+                # surface.
                 future_set_exc_info(f, sys.exc_info())
 
         d.addCallbacks(f.set_result, errback)
