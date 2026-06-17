@@ -2,11 +2,18 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import textwrap
 import time
 import unittest
 from subprocess import Popen
 from tempfile import mkdtemp
+
+
+# Make the in-repo tornado importable when these tests are run directly
+# (the subprocess-based tests in AutoreloadTest set PYTHONPATH themselves,
+# but the unit tests below run in this interpreter).
+import tornado.autoreload  # noqa: E402
 
 
 class AutoreloadTest(unittest.TestCase):
@@ -262,3 +269,35 @@ else:
         )
 
         self.assertEqual(out, "reloading\nexiting cleanly\n")
+
+
+class CheckFileTest(unittest.TestCase):
+    """Direct unit tests for the private ``_check_file`` helper.
+
+    The wider ``AutoreloadTest`` runs as subprocesses; these tests exercise
+    the missing-file path and the embedded-null-byte path without spawning
+    a process, so they run in milliseconds and don't depend on ``--until-success``.
+    """
+
+    def test_missing_file_is_silently_skipped(self):
+        modify_times: dict = {}
+        # A path that does not exist should not raise; the function records
+        # nothing and returns cleanly so a transient race (file removed
+        # between scan and stat) does not crash the watcher.
+        tornado.autoreload._check_file(modify_times, "/nonexistent/path/to/file.py")
+        assert modify_times == {}
+
+    def test_path_with_embedded_null_byte_is_silently_skipped(self):
+        modify_times: dict = {}
+        # os.stat raises ValueError (not OSError) on embedded null bytes; the
+        # earlier `except Exception` swallowed this but also hid unrelated
+        # bugs, so the contract here is that the helper still tolerates it.
+        tornado.autoreload._check_file(modify_times, "/tmp/foo\x00bar.py")
+        assert modify_times == {}
+
+    def test_existing_file_records_mtime(self):
+        modify_times: dict = {}
+        with tempfile.NamedTemporaryFile() as tf:
+            tornado.autoreload._check_file(modify_times, tf.name)
+            assert tf.name in modify_times
+            assert modify_times[tf.name] == os.stat(tf.name).st_mtime
