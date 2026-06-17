@@ -10,6 +10,7 @@ from tornado.escape import utf8
 from tornado.util import (
     ArgReplacer,
     Configurable,
+    errno_from_exception,
     exec_in,
     import_object,
     raise_exc_info,
@@ -366,3 +367,64 @@ class VersionInfoTest(unittest.TestCase):
 
     def test_current_version(self):
         self.assert_version_info_compatible(tornado.version, tornado.version_info)
+
+
+class ErrnoFromExceptionTest(unittest.TestCase):
+    """Tests for ``tornado.util.errno_from_exception``.
+
+    Callers compare the returned value against int errno constants
+    (e.g. ``errno.EBADF``) or use ``in`` on a tuple of constants. If a
+    non-int value ever leaks through, every comparison becomes ``False``
+    and the error is silently misclassified.
+    """
+
+    def test_errno_attribute_preferred(self):
+        # When errno is set, it wins over args.
+        exc = OSError(42, "some message")
+        self.assertEqual(errno_from_exception(exc), 42)
+
+    def test_args_int_fallback(self):
+        # When errno is missing but args[0] is an int, return it.
+        # OSError sets errno as a property that mirrors args[0], so it
+        # is hard to use for this test directly; use a bare Exception
+        # subclass that has no errno attribute at all.
+        class NoErrnoException(Exception):
+            pass
+
+        exc = NoErrnoException(13)
+        self.assertFalse(hasattr(exc, "errno"))
+        self.assertEqual(errno_from_exception(exc), 13)
+
+    def test_empty_args_returns_none(self):
+        exc = Exception()
+        self.assertFalse(hasattr(exc, "errno"))
+        self.assertEqual(exc.args, ())
+        self.assertIsNone(errno_from_exception(exc))
+
+    def test_non_int_args_returns_none(self):
+        # The fix: a third-party exception that only sets a
+        # human-readable message (a str) as the first argument must not
+        # return the message; otherwise callers compare a str to an int
+        # errno constant and silently misclassify every error.
+        # Use a bare Exception subclass (no OSError parent) so the
+        # `errno` attribute does not exist and the args branch is hit.
+        class MessageOnlyException(Exception):
+            pass
+
+        exc = MessageOnlyException("connection lost")
+        self.assertFalse(hasattr(exc, "errno"))
+        self.assertIsNone(errno_from_exception(exc))
+
+    def test_non_int_first_arg_with_int_second(self):
+        # args[0] is inspected, not args[1], so a str message with an
+        # int attached as args[1] must not pick up the int: the
+        # documented contract is "use args[0] as the errno if the errno
+        # attribute is missing". When args[0] is a str the fix returns
+        # None instead of leaking a non-int into the int comparisons
+        # at call sites.
+        class MessageFirstException(Exception):
+            pass
+
+        exc = MessageFirstException("not a number", 99)
+        self.assertFalse(hasattr(exc, "errno"))
+        self.assertIsNone(errno_from_exception(exc))
