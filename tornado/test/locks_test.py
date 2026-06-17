@@ -119,6 +119,25 @@ class ConditionTest(AsyncTestCase):
         yield wait  # No TimeoutError.
 
     @gen_test
+    def test_wait_zero_timeout(self):
+        # A timeout of exactly 0.0 must still be honored as a timeout.
+        # Previously `if timeout:` treated 0.0 as no-timeout and the
+        # waiter blocked forever.
+        c = locks.Condition()
+        wait = c.wait(0.0)
+        # Let the IOLoop run the timeout callback.
+        yield gen.sleep(0.01)
+        self.assertFalse((yield wait))
+
+    @gen_test
+    def test_wait_zero_timedelta_timeout(self):
+        # Same as above but with a zero timedelta instead of float 0.0.
+        c = locks.Condition()
+        wait = c.wait(timedelta(0))
+        yield gen.sleep(0.01)
+        self.assertFalse((yield wait))
+
+    @gen_test
     def test_notify_n_with_timeout(self):
         # Register callbacks 0, 1, 2, and 3. Callback 1 has a timeout.
         # Wait for that timeout to expire, then do notify(2) and make

@@ -187,7 +187,11 @@ def _reload_on_update(modify_times: dict[str, float]) -> None:
 def _check_file(modify_times: dict[str, float], path: str) -> None:
     try:
         modified = os.stat(path).st_mtime
-    except Exception:
+    except (OSError, ValueError):
+        # OSError covers FileNotFoundError (file removed between scan and stat),
+        # PermissionError (file unreadable), and NotADirectoryError (intermediate
+        # path component not a directory). ValueError covers embedded null bytes
+        # in the path. Anything else is a real bug we want to surface.
         return
     if path not in modify_times:
         modify_times[path] = modified
