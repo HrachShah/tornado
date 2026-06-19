@@ -261,6 +261,15 @@ class OptionsTest(unittest.TestCase):
             options.define("foo")
         self.assertRegex(str(cm.exception), "Option.*foo.*already defined")
 
+    def test_parse_timedelta_invalid_raises_options_error(self):
+        # Malformed timedelta strings should raise options.Error with a message
+        # that includes the bad value, not a bare Exception().
+        options = OptionParser()
+        options.define("t", type=datetime.timedelta)
+        with self.assertRaises(Error) as cm:
+            options.parse_command_line(["main.py", "--t=not-a-time"])
+        self.assertIn("not-a-time", str(cm.exception))
+
     def test_error_redefine_underscore(self):
         # Ensure that the dash/underscore normalization doesn't
         # interfere with the redefinition error.
