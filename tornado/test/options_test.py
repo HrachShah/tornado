@@ -321,3 +321,51 @@ class OptionsTest(unittest.TestCase):
         options.print_help(buf)
         self.assertIn("--with-dash", buf.getvalue())
         self.assertIn("--with-underscore", buf.getvalue())
+
+    def test_timedelta_empty_string_raises(self):
+        # _parse_timedelta previously returned ``datetime.timedelta(0)``
+        # silently for an empty value, and raised a bare ``Exception()``
+        # with no message for unrecognised components. It now raises
+        # ``Error`` with a message that includes the offending input.
+        options = OptionParser()
+        options.define("td", type=datetime.timedelta)
+        with self.assertRaises(Error) as cm:
+            options.parse_command_line(["main.py", "--td="])
+        self.assertIn("Invalid timedelta value", str(cm.exception))
+
+    def test_timedelta_whitespace_string_raises(self):
+        # Same fix as test_timedelta_empty_string_raises; a value that is
+        # only whitespace also has no components and should be rejected.
+        options = OptionParser()
+        options.define("td", type=datetime.timedelta)
+        with self.assertRaises(Error) as cm:
+            options.parse_command_line(["main.py", "--td=   "])
+        self.assertIn("Invalid timedelta value", str(cm.exception))
+
+    def test_timedelta_garbage_raises_with_message(self):
+        # A non-numeric value used to raise ``Exception()`` with no message.
+        # The replacement message includes the offending input so the
+        # caller can see what they passed.
+        options = OptionParser()
+        options.define("td", type=datetime.timedelta)
+        with self.assertRaises(Error) as cm:
+            options.parse_command_line(["main.py", "--td=garbage"])
+        self.assertIn("Unrecognized", str(cm.exception))
+        self.assertIn("garbage", str(cm.exception))
+
+    def test_timedelta_unknown_unit_raises_with_unit_name(self):
+        # A numeric value with an unknown unit used to leak a TypeError
+        # from inside datetime.timedelta. The replacement is an Error
+        # naming the offending unit.
+        options = OptionParser()
+        options.define("td", type=datetime.timedelta)
+        with self.assertRaises(Error) as cm:
+            options.parse_command_line(["main.py", "--td=5foo"])
+        self.assertIn("Unrecognized timedelta unit 'foo'", str(cm.exception))
+
+    def test_timedelta_valid_value_still_parses(self):
+        # Make sure the fix did not regress the happy path.
+        options = OptionParser()
+        options.define("td", type=datetime.timedelta)
+        options.parse_command_line(["main.py", "--td=45s"])
+        self.assertEqual(options.td, datetime.timedelta(seconds=45))

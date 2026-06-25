@@ -640,21 +640,27 @@ class _Option:
     )
 
     def _parse_timedelta(self, value: str) -> datetime.timedelta:
+        if not value.strip():
+            raise Error("Invalid timedelta value: %r" % value)
         try:
-            sum = datetime.timedelta()
+            total = datetime.timedelta()
             start = 0
             while start < len(value):
                 m = self._TIMEDELTA_PATTERN.match(value, start)
                 if not m:
-                    raise Exception()
+                    raise Error("Unrecognized timedelta component in %r" % value)
                 num = float(m.group(1))
                 units = m.group(2) or "seconds"
                 units = self._TIMEDELTA_ABBREV_DICT.get(units, units)
-
-                sum += datetime.timedelta(**{units: num})
+                try:
+                    total += datetime.timedelta(**{units: num})
+                except TypeError:
+                    raise Error(
+                        "Unrecognized timedelta unit %r in %r" % (units, value)
+                    )
                 start = m.end()
-            return sum
-        except Exception:
+            return total
+        except Error:
             raise
 
     def _parse_bool(self, value: str) -> bool:
