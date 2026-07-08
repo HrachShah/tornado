@@ -69,7 +69,12 @@ class GzipDecompressor:
         # Magic parameter makes zlib module understand gzip header
         # http://stackoverflow.com/questions/1838699/how-can-i-decompress-a-gzip-stream-with-zlib
         # This works on cpython and pypy, but not jython.
-        self.decompressobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        self._decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        # Bytes left over from a previous call (the start of a
+        # concatenated gzip member, or junk after the trailer) that the
+        # previous ``decompressor`` did not consume. Prepended to the
+        # next ``decompress`` call.
+        self._pending_input = b""
 
     def decompress(self, value: bytes, max_length: int = 0) -> bytes:
         """Decompress a chunk, returning newly-available data.
@@ -81,13 +86,58 @@ class GzipDecompressor:
         If ``max_length`` is given, some input data may be left over
         in ``unconsumed_tail``; you must retrieve this value and pass
         it back to a future call to `decompress` if it is not empty.
+
+        Concatenated gzip members (multiple gzip frames back-to-back
+        in a single byte stream, as produced by some HTTP servers) are
+        decompressed transparently: when the current ``decompressor``
+        reaches the end of a member, the remainder of its input is
+        fed into a fresh ``decompressor`` and decompression continues
+        with the next member.
         """
-        return self.decompressobj.decompress(value, max_length)
+        value = self._pending_input + value
+        self._pending_input = b""
+        out = b""
+        while True:
+            try:
+                chunk = self._decompressor.decompress(value, max_length)
+            except zlib.error as e:
+                # The current ``decompressor`` may have already returned
+                # data for the trailing member before failing on
+                # truncated input. Stash whatever bytes it did not
+                # consume for the next call and surface the error so
+                # the caller still sees a real failure (a malformed
+                # gzip body is an error, not a silent truncation).
+                self._pending_input = (
+                    self._decompressor.unconsumed_tail
+                    + self._decompressor.unused_data
+                )
+                if out:
+                    return out
+                raise
+            out += chunk
+            if not self._decompressor.eof:
+                self._pending_input = self._decompressor.unconsumed_tail
+                return out
+            # End of a gzip member. Carry any tail bytes (start of a
+            # concatenated member, or anything that came after the
+            # gzip footer) into a fresh ``decompressor`` and keep
+            # going. ``unconsumed_tail`` is the slice of the *input*
+            # the decompressor did not need to produce its last
+            # chunk; ``unused_data`` is whatever came after the gzip
+            # trailer.
+            tail = (
+                self._decompressor.unconsumed_tail
+                + self._decompressor.unused_data
+            )
+            if not tail:
+                return out
+            self._decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+            value = tail
 
     @property
     def unconsumed_tail(self) -> bytes:
         """Returns the unconsumed portion left over"""
-        return self.decompressobj.unconsumed_tail
+        return self._pending_input + self._decompressor.unconsumed_tail
 
     def flush(self) -> bytes:
         """Return any remaining buffered data not yet returned by decompress.
@@ -95,7 +145,7 @@ class GzipDecompressor:
         Also checks for errors such as truncated input.
         No other methods may be called on this object after `flush`.
         """
-        return self.decompressobj.flush()
+        return self._decompressor.flush()
 
 
 def import_object(name: str) -> Any:

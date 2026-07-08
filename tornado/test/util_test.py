@@ -1,4 +1,6 @@
 import datetime
+import gzip
+import io
 import re
 import sys
 import textwrap
@@ -10,6 +12,7 @@ from tornado.escape import utf8
 from tornado.util import (
     ArgReplacer,
     Configurable,
+    GzipDecompressor,
     exec_in,
     import_object,
     raise_exc_info,
@@ -366,3 +369,62 @@ class VersionInfoTest(unittest.TestCase):
 
     def test_current_version(self):
         self.assert_version_info_compatible(tornado.version, tornado.version_info)
+
+
+def _gzip_member(data: bytes) -> bytes:
+    buf = io.BytesIO()
+    with gzip.GzipFile(fileobj=buf, mode="wb") as f:
+        f.write(data)
+    return buf.getvalue()
+
+
+class GzipDecompressorTest(unittest.TestCase):
+    def test_single_member(self):
+        payload = b"hello world"
+        d = GzipDecompressor()
+        self.assertEqual(d.decompress(_gzip_member(payload)), payload)
+        self.assertEqual(d.flush(), b"")
+
+    def test_concatenated_members_full_stream(self):
+        # Two gzip members back-to-back must be decompressed in full when the
+        # entire concatenated body arrives in a single ``decompress`` call.
+        combined = _gzip_member(b"hello ") + _gzip_member(b"world")
+        d = GzipDecompressor()
+        self.assertEqual(d.decompress(combined), b"hello world")
+        self.assertEqual(d.flush(), b"")
+
+    def test_concatenated_members_split_across_calls(self):
+        # The boundary between two gzip members must not be lost when the
+        # stream is delivered in small chunks.
+        combined = _gzip_member(b"hello ") + _gzip_member(b"world")
+        d = GzipDecompressor()
+        out = b""
+        # Feed one byte at a time to exercise the pending-input bookkeeping.
+        for byte in combined:
+            chunk = d.decompress(bytes([byte]))
+            self.assertIsInstance(chunk, bytes)
+            out += chunk
+        self.assertEqual(out, b"hello world")
+        self.assertEqual(d.flush(), b"")
+
+    def test_concatenated_members_split_at_boundary(self):
+        # If the chunk boundary lands exactly on the gzip trailer of the
+        # first member, the second member's data must still be returned.
+        m1 = _gzip_member(b"hello ")
+        m2 = _gzip_member(b"world")
+        d = GzipDecompressor()
+        self.assertEqual(d.decompress(m1), b"hello ")
+        self.assertEqual(d.decompress(m2), b"world")
+        self.assertEqual(d.flush(), b"")
+
+    def test_max_length_preserved_across_member_boundary(self):
+        # The ``max_length`` cap must still apply after the first member ends
+        # and the second member's bytes are carried into the next call.
+        combined = _gzip_member(b"hello ") + _gzip_member(b"world")
+        d = GzipDecompressor()
+        first = d.decompress(combined, max_length=3)
+        self.assertEqual(first, b"hel")
+        tail = d.unconsumed_tail
+        rest = d.decompress(tail)
+        self.assertEqual(rest, b"lo world")
+        self.assertEqual(d.flush(), b"")
