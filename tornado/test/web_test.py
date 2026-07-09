@@ -49,6 +49,7 @@ from tornado.web import (
     StaticFileHandler,
     UIModule,
     _create_signature_v1,
+    _has_stream_request_body,
     addslash,
     authenticated,
     create_signed_value,
@@ -118,6 +119,35 @@ class CookieTestRequestHandler(RequestHandler):
 
     def set_cookie(self, name, value, expires_days=None):  # type: ignore[override]
         self._cookies[name] = value
+
+
+# See SignedValueTest below for more.
+class TestStreamRequestBodyDecorator(unittest.TestCase):
+    def test_decorator_rejects_non_subclass(self):
+        # ``stream_request_body`` is a RequestHandler class decorator and
+        # has been documented to require a RequestHandler subclass since
+        # 4.5. The old ``raise TypeError("expected subclass of
+        # RequestHandler, got %r", cls)`` was a bug because ``TypeError``
+        # does not interpolate its format string -- it stored the two
+        # arguments separately, and ``str(exc)`` rendered them as the
+        # useless ``"('expected subclass of RequestHandler, got %r',
+        # <class 'int'>)"``. The fix uses ``%`` interpolation so the
+        # class name actually appears in the error.
+        with self.assertRaises(TypeError) as cm:
+            stream_request_body(int)  # type: ignore[arg-type]
+        # The original error message must be present (so existing
+        # call sites that match on it keep working) AND the class
+        # name must be in the rendered string.
+        self.assertIn("expected subclass of RequestHandler", str(cm.exception))
+        self.assertIn("int", str(cm.exception))
+
+    def test__has_stream_request_body_rejects_non_subclass(self):
+        # The private ``_has_stream_request_body`` shares the same
+        # error-message format and the same fix.
+        with self.assertRaises(TypeError) as cm:
+            _has_stream_request_body(int)  # type: ignore[arg-type]
+        self.assertIn("expected subclass of RequestHandler", str(cm.exception))
+        self.assertIn("int", str(cm.exception))
 
 
 # See SignedValueTest below for more.
@@ -3028,6 +3058,7 @@ class XSRFTest(SimpleHandlerTestCase):
             ),
         )
         self.assertEqual(response.code, 200)
+
 
     def test_distinct_tokens(self):
         # Every request gets a distinct token.

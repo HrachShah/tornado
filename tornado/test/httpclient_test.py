@@ -313,7 +313,7 @@ Transfer-Encoding: chunked
         # important thing is that they don't fall back to basic auth
         # on an unknown mode.
         with ExpectLog(gen_log, "uncaught exception", required=False):
-            with self.assertRaises((ValueError, HTTPError)):  # type: ignore
+            with self.assertRaises((ValueError, HTTPError)) as cm:  # type: ignore
                 self.fetch(
                     "/auth",
                     auth_username="Aladdin",
@@ -321,6 +321,13 @@ Transfer-Encoding: chunked
                     auth_mode="asdf",
                     raise_error=True,
                 )
+        # The error message should name the offending mode so the caller
+        # can see at a glance which one the server rejected. Older code
+        # passed the format string and the value as separate arguments
+        # to ValueError, which produced a str() like
+        # "('unsupported auth_mode %s', 'asdf')" -- useless to anyone
+        # reading the log line.
+        self.assertIn("asdf", str(cm.exception))
 
     def test_follow_redirect(self):
         response = self.fetch("/countdown/2", follow_redirects=False)
