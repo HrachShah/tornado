@@ -331,7 +331,7 @@ def linkify(
       ``javascript``.
     """
     if extra_params and not callable(extra_params):
-        extra_params = " " + extra_params.strip()
+        extra_params = extra_params.strip()
 
     def make_link(m: typing.Match) -> str:
         url = m.group(1)
@@ -347,9 +347,11 @@ def linkify(
             href = "http://" + href  # no proto specified, use http
 
         if callable(extra_params):
-            params = " " + extra_params(href).strip()
+            params = extra_params(href).strip()
         else:
             params = extra_params
+        if params:
+            params = " " + params
 
         # clip long urls. max_len is just an approximation
         max_len = 30

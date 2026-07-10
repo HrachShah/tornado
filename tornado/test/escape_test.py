@@ -207,6 +207,30 @@ linkify_tests: list[tuple[str | bytes, dict[str, Any], str]] = [
         {"extra_params": lambda href: '    rel="nofollow" class="external"  '},
         '<a href="http://www.external-link.com" rel="nofollow" class="external">www.external-link.com</a>',  # noqa: E501
     ),
+    # An extra_params callable that returns an empty (or whitespace-only)
+    # string should not insert a stray leading space before the closing
+    # `"` of the tag.
+    (
+        "www.external-link.com",
+        {"extra_params": lambda href: ""},
+        '<a href="http://www.external-link.com">www.external-link.com</a>',
+    ),
+    (
+        "www.external-link.com",
+        {"extra_params": lambda href: "   "},
+        '<a href="http://www.external-link.com">www.external-link.com</a>',
+    ),
+    # Same for a string extra_params that is empty or whitespace only.
+    (
+        "www.external-link.com",
+        {"extra_params": ""},
+        '<a href="http://www.external-link.com">www.external-link.com</a>',
+    ),
+    (
+        "www.external-link.com",
+        {"extra_params": "   "},
+        '<a href="http://www.external-link.com">www.external-link.com</a>',
+    ),
 ]
 
 
