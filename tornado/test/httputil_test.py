@@ -499,6 +499,18 @@ Foo: even
         self.assertEqual(headers["quux"], "xyzzy")
         self.assertEqual(sorted(headers.get_all()), [("Foo", "bar"), ("Quux", "xyzzy")])
 
+    def test_non_string_keys_raise_type_error(self):
+        headers = HTTPHeaders()
+        for bad in (1, 1.5, None, b"Foo", ("Foo",), object()):
+            with self.assertRaises(TypeError):
+                headers[bad] = "value"
+            with self.assertRaises(TypeError):
+                headers[bad]
+            with self.assertRaises(TypeError):
+                del headers[bad]
+        self.assertNotIn(1, headers)
+        self.assertNotIn(b"Foo", headers)
+
     def test_string(self):
         headers = HTTPHeaders()
         headers.add("Foo", "1")
