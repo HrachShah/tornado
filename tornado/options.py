@@ -100,6 +100,7 @@ instances to define isolated sets of options, such as for subcommands.
 """
 
 import datetime
+import math
 import numbers
 import os
 import re
@@ -649,6 +650,8 @@ class _Option:
             if not m:
                 raise Error("Unrecognized timedelta format: %r" % value)
             num = float(m.group(1))
+            if not math.isfinite(num):
+                raise Error("Unrecognized timedelta format: %r" % value)
             units = m.group(2) or "seconds"
             units = self._TIMEDELTA_ABBREV_DICT.get(units, units)
             try:

@@ -248,7 +248,7 @@ class OptionsTest(unittest.TestCase):
         # included so callers can debug from the message alone.
         options = OptionParser()
         options.define("interval", type=datetime.timedelta)
-        for bad in ("", "   ", "hello", "5foo", "1e308s", "nans"):
+        for bad in ("", "   ", "hello", "5foo", "1e308s", "nans", "infs"):
             with self.assertRaises(Error) as ctx:
                 options.parse_command_line(["main.py", "--interval=" + bad])
             self.assertIn("timedelta", str(ctx.exception).lower())
