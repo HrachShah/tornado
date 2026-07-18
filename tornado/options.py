@@ -653,9 +653,10 @@ class _Option:
             units = self._TIMEDELTA_ABBREV_DICT.get(units, units)
             try:
                 total += datetime.timedelta(**{units: num})
-            except (TypeError, OverflowError):
+            except (TypeError, OverflowError, ValueError):
                 # TypeError: '{units}' is not a keyword argument
                 # OverflowError: 1e308s overflows the C-int microseconds field
+                # ValueError: non-finite values cannot be converted to microseconds
                 raise Error("Unrecognized timedelta format: %r" % value)
             start = m.end()
         return total
