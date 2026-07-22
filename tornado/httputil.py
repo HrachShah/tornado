@@ -357,7 +357,7 @@ class HTTPHeaders(collections.abc.MutableMapping[str, str]):
                 "HTTPHeaders keys must be str, not %s" % type(name).__name__
             )
         norm_name = _normalize_header(name)
-        del self._combined_cache[norm_name]
+        self._combined_cache.pop(norm_name, None)
         del self._as_list[norm_name]
 
     def __len__(self) -> int:

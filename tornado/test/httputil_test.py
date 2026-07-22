@@ -511,6 +511,12 @@ Foo: even
         self.assertNotIn(1, headers)
         self.assertNotIn(b"Foo", headers)
 
+    def test_delete_uncached_header(self):
+        headers = HTTPHeaders({"Foo": "value"})
+        headers._combined_cache.clear()
+        del headers["foo"]
+        self.assertEqual(len(headers), 0)
+
     def test_string(self):
         headers = HTTPHeaders()
         headers.add("Foo", "1")
