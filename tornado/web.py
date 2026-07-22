@@ -1437,7 +1437,7 @@ class RequestHandler:
                 if len(parts) > 1 and parts[1].strip().startswith("q="):
                     try:
                         score = float(parts[1].strip()[2:])
-                        if score < 0:
+                        if score < 0 or score > 1:
                             raise ValueError()
                     except (ValueError, TypeError):
                         score = 0.0
