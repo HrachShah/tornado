@@ -637,7 +637,9 @@ class _Option:
     _FLOAT_PATTERN = r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
 
     _TIMEDELTA_PATTERN = re.compile(
-        r"\s*(%s)\s*(\w*)\s*" % _FLOAT_PATTERN, re.IGNORECASE
+        r"\s*(%s)\s*(weeks?|days?|hours?|minutes?|mins?|seconds?|secs?|milliseconds?|microseconds?|ms|us|w|d|h|m|s)?\s*"
+        % _FLOAT_PATTERN,
+        re.IGNORECASE,
     )
 
     def _parse_timedelta(self, value: str) -> datetime.timedelta:
@@ -652,7 +654,7 @@ class _Option:
             num = float(m.group(1))
             if not math.isfinite(num):
                 raise Error("Unrecognized timedelta format: %r" % value)
-            units = m.group(2) or "seconds"
+            units = (m.group(2) or "seconds").lower()
             units = self._TIMEDELTA_ABBREV_DICT.get(units, units)
             try:
                 total += datetime.timedelta(**{units: num})

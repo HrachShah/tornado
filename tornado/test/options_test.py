@@ -254,6 +254,12 @@ class OptionsTest(unittest.TestCase):
             self.assertIn("timedelta", str(ctx.exception).lower())
             self.assertIn(bad, str(ctx.exception))
 
+    def test_parse_timedelta_accepts_uppercase_units(self):
+        options = OptionParser()
+        options.define("interval", type=datetime.timedelta)
+        options.parse_command_line(["main.py", "--interval=2H30M"])
+        self.assertEqual(options.interval, datetime.timedelta(hours=2, minutes=30))
+
     def test_parse_timedelta_blank_value(self):
         # An empty or whitespace-only value used to fall through the
         # while loop and silently return timedelta(0); the parser should
