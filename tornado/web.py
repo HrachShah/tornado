@@ -1437,7 +1437,7 @@ class RequestHandler:
                 score = 1.0
                 for parameter in parts[1:]:
                     parameter = parameter.strip()
-                    if not parameter.startswith("q="):
+                    if not parameter.lower().startswith("q="):
                         continue
                     try:
                         score = float(parameter[2:])
