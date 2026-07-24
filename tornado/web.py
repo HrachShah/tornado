@@ -1434,15 +1434,18 @@ class RequestHandler:
             locales = []
             for language in languages:
                 parts = language.strip().split(";")
-                if len(parts) > 1 and parts[1].strip().startswith("q="):
+                score = 1.0
+                for parameter in parts[1:]:
+                    parameter = parameter.strip()
+                    if not parameter.startswith("q="):
+                        continue
                     try:
-                        score = float(parts[1].strip()[2:])
+                        score = float(parameter[2:])
                         if score < 0 or score > 1:
                             raise ValueError()
                     except (ValueError, TypeError):
                         score = 0.0
-                else:
-                    score = 1.0
+                    break
                 if score > 0:
                     locales.append((parts[0], score))
             if locales:
