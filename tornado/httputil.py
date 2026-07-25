@@ -922,6 +922,8 @@ def _int_or_none(val: str) -> int | None:
     val = val.strip()
     if val == "":
         return None
+    if not val.isdecimal():
+        raise ValueError
     return int(val)
 
 

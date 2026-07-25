@@ -14,6 +14,7 @@ from tornado.httputil import (
     HTTPServerRequest,
     ParseMultipartConfig,
     RequestStartLine,
+    _parse_request_range,
     format_timestamp,
     parse_cookie,
     parse_multipart_form_data,
@@ -621,6 +622,13 @@ class ParseRequestStartLineTest(unittest.TestCase):
         self.assertEqual(parsed_start_line.method, self.METHOD)
         self.assertEqual(parsed_start_line.path, self.PATH)
         self.assertEqual(parsed_start_line.version, self.VERSION)
+
+
+class ParseRequestRangeTest(unittest.TestCase):
+    def test_rejects_signed_positions(self):
+        for value in ("bytes=+1-2", "bytes=1-+2", "bytes=-+2"):
+            with self.subTest(value=value):
+                self.assertIsNone(_parse_request_range(value))
 
 
 class ParseCookieTest(unittest.TestCase):
