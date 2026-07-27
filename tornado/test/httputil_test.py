@@ -333,6 +333,13 @@ Content-Disposition: form-data; name="files"; filename="ab.txt"
 
 
 class HTTPHeadersTest(unittest.TestCase):
+    def test_mapping_assignment_validates_names_and_values(self):
+        headers = HTTPHeaders()
+        with self.assertRaises(HTTPInputError):
+            headers["Bad Name"] = "value"
+        with self.assertRaises(HTTPInputError):
+            headers["X-Test"] = "bad\nvalue"
+
     def test_multi_line(self):
         # Lines beginning with whitespace are appended to the previous line
         # with any leading whitespace replaced by a single space.
