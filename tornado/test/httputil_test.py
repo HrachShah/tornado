@@ -630,6 +630,11 @@ class ParseRequestRangeTest(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertIsNone(_parse_request_range(value))
 
+    def test_rejects_non_ascii_positions(self):
+        for value in ("bytes=１-2", "bytes=1-２"):
+            with self.subTest(value=value):
+                self.assertIsNone(_parse_request_range(value))
+
 
 class ParseCookieTest(unittest.TestCase):
     # These tests copied from Django:
