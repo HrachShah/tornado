@@ -14,6 +14,7 @@ from tornado.httputil import (
     HTTPServerRequest,
     ParseMultipartConfig,
     RequestStartLine,
+    _parse_request_range,
     format_timestamp,
     parse_cookie,
     parse_multipart_form_data,
@@ -332,6 +333,13 @@ Content-Disposition: form-data; name="files"; filename="ab.txt"
 
 
 class HTTPHeadersTest(unittest.TestCase):
+    def test_mapping_assignment_validates_names_and_values(self):
+        headers = HTTPHeaders()
+        with self.assertRaises(HTTPInputError):
+            headers["Bad Name"] = "value"
+        with self.assertRaises(HTTPInputError):
+            headers["X-Test"] = "bad\nvalue"
+
     def test_multi_line(self):
         # Lines beginning with whitespace are appended to the previous line
         # with any leading whitespace replaced by a single space.
@@ -488,6 +496,14 @@ Foo: even
         self.assertEqual(sorted(headers.get_all()), sorted(unpickled.get_all()))
         self.assertEqual(sorted(headers.items()), sorted(unpickled.items()))
 
+    def test_get_list_returns_a_copy(self):
+        headers = HTTPHeaders()
+        headers.add("X-Test", "one")
+        values = headers.get_list("X-Test")
+        values.append("two")
+        self.assertEqual(headers.get_list("X-Test"), ["one"])
+        self.assertEqual(headers["X-Test"], "one")
+
     def test_setdefault(self):
         headers = HTTPHeaders()
         headers["foo"] = "bar"
@@ -621,6 +637,18 @@ class ParseRequestStartLineTest(unittest.TestCase):
         self.assertEqual(parsed_start_line.method, self.METHOD)
         self.assertEqual(parsed_start_line.path, self.PATH)
         self.assertEqual(parsed_start_line.version, self.VERSION)
+
+
+class ParseRequestRangeTest(unittest.TestCase):
+    def test_rejects_signed_positions(self):
+        for value in ("bytes=+1-2", "bytes=1-+2", "bytes=-+2"):
+            with self.subTest(value=value):
+                self.assertIsNone(_parse_request_range(value))
+
+    def test_rejects_non_ascii_positions(self):
+        for value in ("bytes=１-2", "bytes=1-２"):
+            with self.subTest(value=value):
+                self.assertIsNone(_parse_request_range(value))
 
 
 class ParseCookieTest(unittest.TestCase):

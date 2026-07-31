@@ -100,6 +100,7 @@ instances to define isolated sets of options, such as for subcommands.
 """
 
 import datetime
+import math
 import numbers
 import os
 import re
@@ -636,26 +637,34 @@ class _Option:
     _FLOAT_PATTERN = r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
 
     _TIMEDELTA_PATTERN = re.compile(
-        r"\s*(%s)\s*(\w*)\s*" % _FLOAT_PATTERN, re.IGNORECASE
+        r"\s*(%s)\s*(weeks?|days?|hours?|minutes?|mins?|seconds?|secs?|milliseconds?|microseconds?|ms|us|w|d|h|m|s)?\s*"
+        % _FLOAT_PATTERN,
+        re.IGNORECASE,
     )
 
     def _parse_timedelta(self, value: str) -> datetime.timedelta:
-        try:
-            sum = datetime.timedelta()
-            start = 0
-            while start < len(value):
-                m = self._TIMEDELTA_PATTERN.match(value, start)
-                if not m:
-                    raise Exception()
-                num = float(m.group(1))
-                units = m.group(2) or "seconds"
-                units = self._TIMEDELTA_ABBREV_DICT.get(units, units)
-
-                sum += datetime.timedelta(**{units: num})
-                start = m.end()
-            return sum
-        except Exception:
-            raise
+        if not value or not value.strip():
+            raise Error("Invalid timedelta value: %r" % value)
+        total = datetime.timedelta()
+        start = 0
+        while start < len(value):
+            m = self._TIMEDELTA_PATTERN.match(value, start)
+            if not m:
+                raise Error("Unrecognized timedelta format: %r" % value)
+            num = float(m.group(1))
+            if not math.isfinite(num):
+                raise Error("Unrecognized timedelta format: %r" % value)
+            units = (m.group(2) or "seconds").lower()
+            units = self._TIMEDELTA_ABBREV_DICT.get(units, units)
+            try:
+                total += datetime.timedelta(**{units: num})
+            except (TypeError, OverflowError, ValueError):
+                # TypeError: '{units}' is not a keyword argument
+                # OverflowError: 1e308s overflows the C-int microseconds field
+                # ValueError: non-finite values cannot be converted to microseconds
+                raise Error("Unrecognized timedelta format: %r" % value)
+            start = m.end()
+        return total
 
     def _parse_bool(self, value: str) -> bool:
         return value.lower() not in ("false", "0", "f")

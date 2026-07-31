@@ -3431,10 +3431,19 @@ class AcceptLanguageTest(WebTestCase):
         response = self.fetch("/", headers={"Accept-Language": "fr-FR; q=0.9"})
         self.assertEqual(response.headers["Content-Language"], "fr-FR")
 
+        response = self.fetch("/", headers={"Accept-Language": "fr-FR; Q=0.9"})
+        self.assertEqual(response.headers["Content-Language"], "fr-FR")
+
     def test_accept_language_ignore(self):
         response = self.fetch("/", headers={"Accept-Language": "fr-FR;q=0"})
         self.assertEqual(response.headers["Content-Language"], "en-US")
 
     def test_accept_language_invalid(self):
         response = self.fetch("/", headers={"Accept-Language": "fr-FR;q=-1"})
+        self.assertEqual(response.headers["Content-Language"], "en-US")
+
+        response = self.fetch("/", headers={"Accept-Language": "fr-FR;q=1.1"})
+        self.assertEqual(response.headers["Content-Language"], "en-US")
+
+        response = self.fetch("/", headers={"Accept-Language": "fr-FR;level=1;q=0"})
         self.assertEqual(response.headers["Content-Language"], "en-US")
