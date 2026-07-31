@@ -496,6 +496,14 @@ Foo: even
         self.assertEqual(sorted(headers.get_all()), sorted(unpickled.get_all()))
         self.assertEqual(sorted(headers.items()), sorted(unpickled.items()))
 
+    def test_get_list_returns_a_copy(self):
+        headers = HTTPHeaders()
+        headers.add("X-Test", "one")
+        values = headers.get_list("X-Test")
+        values.append("two")
+        self.assertEqual(headers.get_list("X-Test"), ["one"])
+        self.assertEqual(headers["X-Test"], "one")
+
     def test_setdefault(self):
         headers = HTTPHeaders()
         headers["foo"] = "bar"

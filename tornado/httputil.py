@@ -218,7 +218,7 @@ class HTTPHeaders(collections.abc.MutableMapping[str, str]):
     def get_list(self, name: str) -> list[str]:
         """Returns all values for the given header as a list."""
         norm_name = _normalize_header(name)
-        return self._as_list.get(norm_name, [])
+        return list(self._as_list.get(norm_name, ()))
 
     def get_all(self) -> Iterable[tuple[str, str]]:
         """Returns an iterable of all (name, value) pairs.
