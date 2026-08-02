@@ -213,7 +213,8 @@ class HTTPHeaders(collections.abc.MutableMapping[str, str]):
             self._combined_cache.pop(norm_name, None)
             self._as_list[norm_name].append(value)
         else:
-            self[norm_name] = value
+            self._combined_cache[norm_name] = value
+            self._as_list[norm_name] = [value]
 
     def get_list(self, name: str) -> list[str]:
         """Returns all values for the given header as a list."""
@@ -324,14 +325,21 @@ class HTTPHeaders(collections.abc.MutableMapping[str, str]):
 
     # MutableMapping abstract method implementations.
 
-    def __setitem__(self, name: str, value: str) -> None:
+    def __setitem__(self, name: str, value: str | list[str]) -> None:
         if not isinstance(name, str):
             raise TypeError(
                 "HTTPHeaders keys must be str, not %s" % type(name).__name__
             )
+        if not _ABNF.field_name.fullmatch(name):
+            raise HTTPInputError("Invalid header name %r" % name)
+        values = value if isinstance(value, list) else [value]
+        if not all(isinstance(item, str) for item in values):
+            raise TypeError("HTTPHeaders values must be str")
+        if any(_FORBIDDEN_HEADER_CHARS_RE.search(item) for item in values):
+            raise HTTPInputError("Invalid header value %r" % value)
         norm_name = _normalize_header(name)
-        self._combined_cache[norm_name] = value
-        self._as_list[norm_name] = [value]
+        self._as_list[norm_name] = values.copy()
+        self._combined_cache[norm_name] = ",".join(values)
 
     def __contains__(self, name: object) -> bool:
         # This is an important optimization to avoid the expensive concatenation

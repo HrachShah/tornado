@@ -537,9 +537,19 @@ Foo: even
             "é",
         ]
         for name in invalid_names:
+            for method in ("add", "__setitem__"):
+                headers = HTTPHeaders()
+                with self.assertRaises(HTTPInputError):
+                    if method == "add":
+                        headers.add(name, "bar")
+                    else:
+                        headers[name] = "bar"
+
+    def test_invalid_header_values(self):
+        for value in ("bar\nInjected: value", "bar\rInjected: value", "bar\x00baz"):
             headers = HTTPHeaders()
             with self.assertRaises(HTTPInputError):
-                headers.add(name, "bar")
+                headers["Foo"] = value
 
     def test_linear_performance(self):
         def f(n):
