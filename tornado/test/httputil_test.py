@@ -20,6 +20,7 @@ from tornado.httputil import (
     parse_request_start_line,
     qs_to_qsl,
     url_concat,
+    _get_content_range,
 )
 from tornado.log import gen_log
 from tornado.test.util import ignore_deprecation, skipIfEmulated
@@ -621,6 +622,12 @@ class ParseRequestStartLineTest(unittest.TestCase):
         self.assertEqual(parsed_start_line.method, self.METHOD)
         self.assertEqual(parsed_start_line.path, self.PATH)
         self.assertEqual(parsed_start_line.version, self.VERSION)
+
+
+class ContentRangeTest(unittest.TestCase):
+    def test_rejects_empty_resource_size(self):
+        with self.assertRaisesRegex(ValueError, "total must be greater than zero"):
+            _get_content_range(None, None, 0)
 
 
 class ParseCookieTest(unittest.TestCase):

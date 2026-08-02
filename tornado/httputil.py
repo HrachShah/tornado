@@ -913,6 +913,8 @@ def _get_content_range(start: int | None, end: int | None, total: int) -> str:
     >>> print(_get_content_range(None, None, 4))
     bytes 0-3/4
     """
+    if total <= 0:
+        raise ValueError("total must be greater than zero")
     start = start or 0
     end = (end or total) - 1
     return f"bytes {start}-{end}/{total}"
