@@ -629,6 +629,17 @@ class ContentRangeTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "total must be greater than zero"):
             _get_content_range(None, None, 0)
 
+    def test_rejects_invalid_range_bounds(self):
+        for start, end, message in (
+            (-1, None, "start must be greater than or equal to zero"),
+            (None, 0, "end must be greater than zero"),
+            (4, 4, "start must be less than end"),
+            (5, 4, "start must be less than end"),
+        ):
+            with self.subTest(start=start, end=end):
+                with self.assertRaisesRegex(ValueError, message):
+                    _get_content_range(start, end, 10)
+
 
 class ParseCookieTest(unittest.TestCase):
     # These tests copied from Django:

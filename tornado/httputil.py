@@ -915,6 +915,12 @@ def _get_content_range(start: int | None, end: int | None, total: int) -> str:
     """
     if total <= 0:
         raise ValueError("total must be greater than zero")
+    if start is not None and start < 0:
+        raise ValueError("start must be greater than or equal to zero")
+    if end is not None and end <= 0:
+        raise ValueError("end must be greater than zero")
+    if start is not None and end is not None and start >= end:
+        raise ValueError("start must be less than end")
     start = start or 0
     end = (end or total) - 1
     return f"bytes {start}-{end}/{total}"
