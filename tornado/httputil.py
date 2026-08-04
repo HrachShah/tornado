@@ -924,6 +924,8 @@ def _int_or_none(val: str) -> int | None:
     val = val.strip()
     if val == "":
         return None
+    if not val.isdecimal():
+        raise ValueError("range value must contain only decimal digits")
     return int(val)
 
 
