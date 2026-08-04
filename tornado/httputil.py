@@ -919,6 +919,10 @@ def _get_content_range(start: int | None, end: int | None, total: int) -> str:
         raise ValueError("start must be greater than or equal to zero")
     if end is not None and end <= 0:
         raise ValueError("end must be greater than zero")
+    if start is not None and start >= total:
+        raise ValueError("start must be less than total")
+    if end is not None and end > total:
+        raise ValueError("end must not exceed total")
     if start is not None and end is not None and start >= end:
         raise ValueError("start must be less than end")
     start = start or 0

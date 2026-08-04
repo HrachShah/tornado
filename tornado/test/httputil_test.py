@@ -635,6 +635,8 @@ class ContentRangeTest(unittest.TestCase):
             (None, 0, "end must be greater than zero"),
             (4, 4, "start must be less than end"),
             (5, 4, "start must be less than end"),
+            (10, None, "start must be less than total"),
+            (None, 11, "end must not exceed total"),
         ):
             with self.subTest(start=start, end=end):
                 with self.assertRaisesRegex(ValueError, message):
