@@ -14,6 +14,7 @@ from tornado.httputil import (
     HTTPServerRequest,
     ParseMultipartConfig,
     RequestStartLine,
+    _parse_request_range,
     format_timestamp,
     parse_cookie,
     parse_multipart_form_data,
@@ -740,3 +741,8 @@ class ParseCookieTest(unittest.TestCase):
 
                 # Very loose performance check to avoid false positives
                 self.assertLess(end - start, 1, "Test took too long")
+
+
+class ParseRequestRangeTest(unittest.TestCase):
+    def test_rejects_range_without_hyphen(self):
+        self.assertIsNone(_parse_request_range("bytes=26"))
