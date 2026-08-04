@@ -746,3 +746,8 @@ class ParseCookieTest(unittest.TestCase):
 class ParseRequestRangeTest(unittest.TestCase):
     def test_rejects_range_without_hyphen(self):
         self.assertIsNone(_parse_request_range("bytes=26"))
+
+    def test_rejects_signed_range_values(self):
+        for value in ("bytes=+1-2", "bytes=1-+2", "bytes=--2"):
+            with self.subTest(value=value):
+                self.assertIsNone(_parse_request_range(value))
