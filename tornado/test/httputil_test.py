@@ -21,6 +21,7 @@ from tornado.httputil import (
     qs_to_qsl,
     url_concat,
     _get_content_range,
+    _parse_request_range,
 )
 from tornado.log import gen_log
 from tornado.test.util import ignore_deprecation, skipIfEmulated
@@ -622,6 +623,13 @@ class ParseRequestStartLineTest(unittest.TestCase):
         self.assertEqual(parsed_start_line.method, self.METHOD)
         self.assertEqual(parsed_start_line.path, self.PATH)
         self.assertEqual(parsed_start_line.version, self.VERSION)
+
+
+class ParseRequestRangeTest(unittest.TestCase):
+    def test_rejects_malformed_ranges(self):
+        for value in ("bytes=--1", "bytes=1--2", "bytes=+1-2", "bytes=1 - 2"):
+            with self.subTest(value=value):
+                self.assertIsNone(_parse_request_range(value))
 
 
 class ContentRangeTest(unittest.TestCase):

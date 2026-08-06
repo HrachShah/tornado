@@ -887,12 +887,15 @@ def _parse_request_range(
     unit, value = unit.strip(), value.strip()
     if unit != "bytes":
         return None
-    start_b, _, end_b = value.partition("-")
-    try:
-        start = _int_or_none(start_b)
-        end = _int_or_none(end_b)
-    except ValueError:
+    match = re.fullmatch(r"(\d+)?-(\d*)|(\d+)", value)
+    if match is None:
         return None
+    if match.group(3) is not None:
+        start_b, end_b = match.group(3), ""
+    else:
+        start_b, end_b = match.group(1), match.group(2)
+    start = _int_or_none(start_b)
+    end = _int_or_none(end_b)
     if end is not None:
         if start is None:
             if end != 0:
