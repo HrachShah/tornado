@@ -331,6 +331,18 @@ Content-Disposition: form-data; name="files"; filename="ab.txt"
         self.assertIn("multipart/form-data parsing is disabled", str(cm.exception))
 
 
+class ParseRequestRangeTest(unittest.TestCase):
+    def test_rejects_multiple_ranges(self):
+        from tornado.httputil import _parse_request_range
+
+        self.assertIsNone(_parse_request_range("bytes=1-2,6-10"))
+
+    def test_rejects_additional_equals(self):
+        from tornado.httputil import _parse_request_range
+
+        self.assertIsNone(_parse_request_range("bytes=1-2=3"))
+
+
 class HTTPHeadersTest(unittest.TestCase):
     def test_multi_line(self):
         # Lines beginning with whitespace are appended to the previous line

@@ -908,6 +908,8 @@ def _parse_request_range(
     if unit != "bytes":
         return None
     start_b, _, end_b = value.partition("-")
+    if "-" in end_b or "," in value or "=" in value:
+        return None
     try:
         start = _int_or_none(start_b)
         end = _int_or_none(end_b)
