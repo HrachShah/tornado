@@ -883,9 +883,9 @@ def _parse_request_range(
 
     [0]: http://greenbytes.de/tech/webdav/draft-ietf-httpbis-p5-range-latest.html#byte.ranges
     """
-    unit, _, value = range_header.partition("=")
+    unit, separator, value = range_header.partition("=")
     unit, value = unit.strip(), value.strip()
-    if unit != "bytes":
+    if unit != "bytes" or not separator:
         return None
     match = re.fullmatch(r"(\d+)?-(\d*)|(\d+)", value)
     if match is None:

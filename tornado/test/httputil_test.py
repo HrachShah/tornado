@@ -627,7 +627,13 @@ class ParseRequestStartLineTest(unittest.TestCase):
 
 class ParseRequestRangeTest(unittest.TestCase):
     def test_rejects_malformed_ranges(self):
-        for value in ("bytes=--1", "bytes=1--2", "bytes=+1-2", "bytes=1 - 2"):
+        for value in (
+            "bytes=--1",
+            "bytes=1--2",
+            "bytes=+1-2",
+            "bytes=1 - 2",
+            "bytes",
+        ):
             with self.subTest(value=value):
                 self.assertIsNone(_parse_request_range(value))
 
