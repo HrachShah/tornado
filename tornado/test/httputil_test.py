@@ -634,6 +634,7 @@ class ParseRequestRangeTest(unittest.TestCase):
             "bytes=1 - 2",
             "bytes=１-2",
             "bytes=1-２",
+            "bytes=" + "9" * 5000 + "-",
             "bytes",
         ):
             with self.subTest(value=value):

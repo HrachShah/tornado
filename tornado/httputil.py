@@ -896,6 +896,8 @@ def _parse_request_range(
         start_b, end_b = match.group(1), match.group(2)
     start = _int_or_none(start_b or "")
     end = _int_or_none(end_b or "")
+    if (start_b and start is None) or (end_b and end is None):
+        return None
     if end is not None:
         if start is None:
             if end != 0:
@@ -937,7 +939,10 @@ def _int_or_none(val: str) -> int | None:
     val = val.strip()
     if val == "":
         return None
-    return int(val)
+    try:
+        return int(val)
+    except ValueError:
+        return None
 
 
 @dataclasses.dataclass
