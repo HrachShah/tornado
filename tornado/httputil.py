@@ -887,7 +887,7 @@ def _parse_request_range(
     unit, value = unit.strip(), value.strip()
     if unit != "bytes" or not separator:
         return None
-    match = re.fullmatch(r"(\d+)?-(\d*)|(\d+)", value)
+    match = re.fullmatch(r"([0-9]+)?-([0-9]*)|([0-9]+)", value)
     if match is None:
         return None
     if match.group(3) is not None:
